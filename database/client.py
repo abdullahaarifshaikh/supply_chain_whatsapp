@@ -1,40 +1,29 @@
 from dotenv import load_dotenv
 import os
 from pymongo import MongoClient, ASCENDING
+from typing import Any, Dict, List, Optional
 
 load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI")
-RETAILER_DB_NAME = os.getenv("RETAILER_DB_NAME", "retailer")
-WHOLESALER_DB_NAME = os.getenv("WHOLESALER_DB_NAME", "wholesalers")
+DB_NAME = os.getenv("DB_NAME", "supply_chain")
 
 client = MongoClient(MONGO_URI)
+db = client[DB_NAME]
 
-retailer_db = client[RETAILER_DB_NAME]
-wholesaler_db = client[WHOLESALER_DB_NAME]
-
-retailers_col = retailer_db["retailers"]
-orders_col = retailer_db["orders"]
-
-wholesalers_col = wholesaler_db["wholesalers"]
-inventory_col = wholesaler_db["inventory"]
+# Unified collection for all users (retailers and wholesalers)
+users_col = db["users"]
+orders_col = db["orders"]
 
 
 def ensure_indexes() -> None:
-    retailers_col.create_index([("phone", ASCENDING)], unique=True)
-    retailers_col.create_index([("location", "2dsphere")])
-
-    wholesalers_col.create_index([("phone", ASCENDING)], unique=True)
-    wholesalers_col.create_index([("location", "2dsphere")])
-
-    inventory_col.create_index(
-        [("wholesaler_number", ASCENDING), ("item_name", ASCENDING)],
-        unique=True,
-    )
-    inventory_col.create_index([("location", "2dsphere")])
-    inventory_col.create_index([("item_name", ASCENDING)])
-    inventory_col.create_index([("price", ASCENDING)])
-
+    # Index for phone numbers (unique)
+    users_col.create_index([("phone", ASCENDING)], unique=True)
+    # 2dsphere index for location-based queries
+    users_col.create_index([("location", "2dsphere")])
+    # Index for roles to speed up filtering
+    users_col.create_index([("role", ASCENDING)])
+    
     orders_col.create_index([("retailer_number", ASCENDING)])
     orders_col.create_index([("created_at", ASCENDING)])
 
@@ -50,7 +39,7 @@ def normalize_item_name(item_name: str) -> str:
     return item_name.strip().lower()
 
 
-def serialize_doc(doc: dict | None) -> dict | None:
+def serialize_doc(doc: Optional[dict]) -> Optional[dict]:
     if not doc:
         return doc
     doc = dict(doc)
