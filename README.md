@@ -84,8 +84,6 @@ WHOLESALER_DB_NAME=wholesalers
 GOOGLE_API_KEY=your_google_api_key_here
 ```
 
-> ⚠️ The `.env` file in the repo contains real credentials — rotate them before committing to version control.
-
 **3. Seed the database**
 
 ```bash
